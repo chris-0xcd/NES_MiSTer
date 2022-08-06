@@ -164,7 +164,7 @@ assign AUDIO_L   = sample[15:0];
 assign AUDIO_R   = AUDIO_L;
 assign AUDIO_MIX = 0;
 
-assign LED_USER  = downloading | (loader_fail & led_blink) | (bk_state != S_IDLE) | (bk_pending & ~status[50]);
+assign LED_USER  = downloading | (loader_fail & led_blink) | (bk_state != S_IDLE) | (bk_pending & ~status[50]) | (real_autosave_enabled & bk_pending);
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
 assign BUTTONS [1] = 0;
@@ -361,6 +361,8 @@ wire        sd_buff_wr;
 wire        img_mounted;
 wire        img_readonly;
 wire [63:0] img_size;
+wire        trigger_save;
+wire        real_autosave_enabled;
 
 wire  [7:0] filetype;
 wire        ioctl_downloading;
@@ -421,6 +423,10 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.img_mounted(img_mounted),
 	.img_readonly(img_readonly),
 	.img_size(img_size),
+
+	.save_pending(~bk_save & bk_pending),
+	.trigger_save(trigger_save),
+	.real_autosave_enabled(real_autosave_enabled),
 
 	.ps2_key(ps2_key),
 
@@ -1191,7 +1197,7 @@ always @(posedge clk) begin
 end
 
 wire bk_load    = status[6];
-wire bk_save    = status[7] | (bk_pending & OSD_STATUS && ~status[50]);
+wire bk_save    = status[7] | (bk_pending & OSD_STATUS && ~status[50]) | trigger_save;
 reg  bk_loading = 0;
 reg  bk_loading_req = 0;
 reg  bk_request = 0;
